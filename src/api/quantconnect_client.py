@@ -15,6 +15,12 @@ from resilience_framework import (
     retry_with_backoff, RetryConfig, FailureType, 
     safe_api_request, resilience_manager, CircuitBreakerConfig
 )
+# Import storage systems for real data persistence
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+from storage.backtest_storage import store_quantconnect_backtest
+from storage.strategy_version_control import commit_strategy_version
 
 @dataclass
 class BacktestResult:
@@ -152,6 +158,48 @@ class QuantConnectClient:
         
         return success
     
+    async def upload_strategy_with_version_control(
+        self, 
+        project_id: int, 
+        strategy_name: str, 
+        strategy_code: str,
+        commit_message: str,
+        author: str = "AlgoForge"
+    ) -> Tuple[bool, str]:
+        """
+        Upload strategy to QuantConnect AND store in version control
+        
+        Returns:
+            Tuple of (upload_success, version_id)
+        """
+        logger.info(f"🚀 Uploading strategy {strategy_name} with version control")
+        
+        # First commit to version control
+        try:
+            version_id = commit_strategy_version(
+                strategy_name=strategy_name,
+                code=strategy_code,
+                commit_message=commit_message,
+                author=author,
+                quantconnect_project_id=str(project_id)
+            )
+            logger.success(f"✅ Strategy versioned: {version_id}")
+        except Exception as e:
+            logger.error(f"Failed to version strategy: {e}")
+            return False, ""
+        
+        # Then upload to QuantConnect
+        filename = f"{strategy_name}.py"
+        upload_success = await self.upload_file(project_id, filename, strategy_code)
+        
+        if upload_success:
+            logger.success(f"🎯 Strategy {strategy_name} uploaded and versioned!")
+            logger.info(f"📋 QuantConnect Project: {project_id}")
+            logger.info(f"📝 Version ID: {version_id}")
+            logger.info(f"🔍 You can verify the versioned code in: data/strategies/versions/")
+        
+        return upload_success, version_id
+    
     async def compile_project(self, project_id: int) -> bool:
         """Compile QuantConnect project"""
         logger.info(f"Compiling project {project_id}")
@@ -173,24 +221,50 @@ class QuantConnectClient:
                 logger.error(f"Compilation failed: {compile_result.get('logs', 'Unknown error')}")
                 return False
     
-    async def create_backtest(self, project_id: int, name: str) -> str:
-        """Create and run backtest"""
-        logger.info(f"Creating backtest '{name}' for project {project_id}")
+    async def create_backtest(self, project_id: int, name: str, strategy_name: str = None) -> str:
+        """Create and run backtest - STORES REAL JSON RESPONSE"""
+        logger.info(f"🚀 Creating REAL backtest '{name}' for project {project_id}")
         
         data = {
             "projectId": project_id,
             "name": name
         }
         
+        # Get the REAL QuantConnect API response
         result = await self._request("POST", "backtests/create", json=data)
         backtest_id = result["backtestId"]
         
-        logger.success(f"Created backtest {name} with ID: {backtest_id}")
+        # 🔥 STORE REAL JSON RESPONSE LOCALLY FOR VERIFICATION
+        try:
+            strategy_name = strategy_name or name
+            stored_path = store_quantconnect_backtest(
+                response=result,  # This is the REAL API response
+                project_id=str(project_id),
+                strategy_name=strategy_name
+            )
+            logger.success(f"✅ REAL BACKTEST JSON STORED: {stored_path}")
+            logger.info(f"📋 Backtest ID: {backtest_id}")
+            logger.info(f"🔍 You can verify this at: {stored_path}")
+        except Exception as e:
+            logger.error(f"Failed to store backtest JSON: {e}")
+            # Continue anyway - the backtest was created
+        
+        logger.success(f"🎯 Created REAL backtest {name} with ID: {backtest_id}")
         return backtest_id
     
     async def get_backtest_result(self, project_id: int, backtest_id: str) -> BacktestResult:
-        """Get backtest result with full statistics"""
+        """Get backtest result with full statistics - STORES REAL JSON"""
+        logger.info(f"📊 Fetching REAL backtest results for {backtest_id}")
+        
         result = await self._request("GET", f"backtests/read?projectId={project_id}&backtestId={backtest_id}")
+        
+        # 🔥 STORE REAL COMPLETION JSON RESPONSE
+        try:
+            from storage.backtest_storage import backtest_storage
+            backtest_storage.update_backtest_completion(backtest_id, result)
+            logger.success(f"✅ REAL BACKTEST COMPLETION STORED for {backtest_id}")
+        except Exception as e:
+            logger.warning(f"Failed to store completion data: {e}")
         
         backtest_data = result["backtests"][0]
         
