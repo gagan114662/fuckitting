@@ -1,0 +1,23 @@
+{
+  "parameters": {
+    "lookback_period": 10,
+    "rebalance_frequency": "daily",
+    "confidence_score": 0.6
+  },
+  "expected_metrics": {
+    "annual_return": 0.10,
+    "sharpe_ratio": 0.5,
+    "max_drawdown": 0.20
+  },
+  "risk_controls": {
+    "max_position_size_pct": 1.0,
+    "stop_loss_pct": null,
+    "take_profit_pct": null
+  },
+  "hypothesis_id": "test_spy_momentum_001",
+  "description": "Basic daily momentum for SPY. Long if 10-day momentum is positive, short if negative. Daily rebalance.",
+  "rationale": "Capture short-term momentum trends in SPY.",
+  "asset_classes": ["Equity"],
+  "timeframe": "daily",
+  "indicators": ["Price", "ROC"]
+}

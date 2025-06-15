@@ -1,0 +1,35 @@
+[
+  {
+    "id": "VLMOM_ADAPT_001",
+    "description": "Adaptive large-cap momentum strategy that reduces equity exposure during high VIX periods (VIX > 25) and uses a shorter lookback (5-day ROC) to capture trends when VIX is elevated. Daily rebalance.",
+    "rationale": "Based on research suggesting adaptive momentum can navigate high volatility. High VIX (currently 28.5) suggests caution. Shorter lookbacks may capture transient trends in volatile markets. Aims to achieve moderate returns while mitigating drawdown.",
+    "expected_return": 0.18,
+    "risk_level": "medium",
+    "asset_classes": ["Equity"],
+    "timeframe": "daily",
+    "indicators": ["Price", "ROC", "VIX"],
+    "confidence_score": 0.65
+  },
+  {
+    "id": "HV_MOM_BREAKOUT_002",
+    "description": "High-conviction momentum breakout strategy for large-cap equities, specifically targeting stocks showing strong 20-day ROC when VIX is above 20. Uses a proprietary 'Volatility-Adjusted Trend Score' (VATS) to confirm signals. Expected to capitalize on sharp, volatility-driven breakouts.",
+    "rationale": "Research indicates adaptive strategies can work in high volatility. The current high VIX (28.5) and defensive sector rotation suggest that strong momentum signals confirmed by VATS (derived from VIX and ATR) can yield significant alpha. The research text's mention of 'adaptive momentum approaches' directly supports using VATS.",
+    "expected_return": 0.35,
+    "risk_level": "high",
+    "asset_classes": ["Equity"],
+    "timeframe": "daily",
+    "indicators": ["Price", "ROC", "VIX", "ATR", "VATS"],
+    "confidence_score": 0.75
+  },
+  {
+    "id": "SP500_VOL_SCALP_003",
+    "description": "Short-term S&P 500 index futures scalping strategy triggered by VIX spikes above 25. Aims to profit from mean reversion after volatility events. Not directly momentum, but leverages high-volatility context.",
+    "rationale": "The market context shows high volatility (VIX 28.5). While the research text focuses on equity momentum, high VIX often creates short-term mispricings in index futures that can be exploited through rapid scalping. This is a volatility play rather than a trend-following approach.",
+    "expected_return": 0.28,
+    "risk_level": "high",
+    "asset_classes": ["Futures"],
+    "timeframe": "intraday",
+    "indicators": ["VIX", "PriceLevels"],
+    "confidence_score": 0.50
+  }
+]
